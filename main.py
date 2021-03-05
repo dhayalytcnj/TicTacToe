@@ -204,7 +204,6 @@ class Player:
     def reset(self):
         self.states = []
 
-    
     def savePolicy(self):
             fw = open('policy_' + str(self.name), 'wb')
             pickle.dump(self.states_value, fw)
