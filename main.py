@@ -128,7 +128,7 @@ class State:
     def play(self, rounds):
         for i in range(rounds):
             if i % 1000 == 0:
-                print("Rounds {}".format(i))
+                print("Rounds simulated: {}".format(i))
             while not self.gameEnd:
                 # AI 1
                 positions = self.availableSpots()
@@ -234,8 +234,14 @@ if __name__ == "__main__":
     p2 = AI("p2")
 
     st = State(p1, p2)
+    training = input("How many matches do you want the AI to self-train: ")
+    while not training.isnumeric():
+        print("That is not a number. Try again.\n")
+        training = input("How many matches do you want the AI to self-train: ")
+    
     print("training...")
-    st.play(1000)
+    st.play(int(training))
+    print("TRAINING COMPLETE")
     print("Wins: ", WIN_COUNT)
     print("Losses: ", LOSS_COUNT)
     print ("Ties: ", TIE_COUNT)
