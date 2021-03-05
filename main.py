@@ -1,15 +1,16 @@
 
 '''
 Yash Dhayal, Michael Giordano, Corbin Grosso, & Yuriy
+CSC 426-01
+3/3/2021
 
+Project 1: Self-Learning Tic Tac Toe
 '''
-
 
 import numpy
 
 BOARD_ROWS = 3
 BOARD_COLS = 3
-
 
 class State:
     def __init__(self, p1, p2):
@@ -19,7 +20,7 @@ class State:
         self.isEnd = False
         self.boardHash = None
         # init p1 plays first
-        self.playerSymbol = 1
+        self.whoseTurn = 1
 
     # get unique hash of current board state
     def getHash(self):
@@ -72,9 +73,9 @@ class State:
         return positions
 
     def updateState(self, position):
-        self.board[position] = self.playerSymbol
+        self.board[position] = self.whoseTurn
         # switch to another player
-        self.playerSymbol = -1 if self.playerSymbol == 1 else 1
+        self.whoseTurn = -1 if self.whoseTurn == 1 else 1
 
     # only when game ends
     def giveReward(self):
@@ -95,16 +96,16 @@ class State:
         self.board = numpy.zeros((BOARD_ROWS, BOARD_COLS))
         self.boardHash = None
         self.isEnd = False
-        self.playerSymbol = 1
+        self.whoseTurn = 1
 
     def play(self, rounds=100):
         for i in range(rounds):
             if i % 1000 == 0:
                 print("Rounds {}".format(i))
             while not self.isEnd:
-                # Player 1
+                # AI 1
                 positions = self.availablePositions()
-                p1_action = self.p1.chooseAction(positions, self.board, self.playerSymbol)
+                p1_action = self.p1.chooseAction(positions, self.board, self.whoseTurn)
                 # take action and upate board state
                 self.updateState(p1_action)
                 board_hash = self.getHash()
@@ -122,9 +123,9 @@ class State:
                     break
 
                 else:
-                    # Player 2
+                    # AI 2
                     positions = self.availablePositions()
-                    p2_action = self.p2.chooseAction(positions, self.board, self.playerSymbol)
+                    p2_action = self.p2.chooseAction(positions, self.board, self.whoseTurn)
                     self.updateState(p2_action)
                     board_hash = self.getHash()
                     self.p2.addState(board_hash)
@@ -157,7 +158,7 @@ class State:
         print('-------------')
 
 
-class Player:
+class AI:
     def __init__(self, name, exp_rate=0.3):
         self.name = name
         self.states = []  # record all positions taken
@@ -205,16 +206,18 @@ class Player:
         self.states = []
 
     def savePolicy(self):
-            fw = open('policy_' + str(self.name), 'wb')
-            pickle.dump(self.states_value, fw)
+            fw = open('save.txt', 'w+')
+            .dump(self.states_value, fw)
             fw.close()
 
 
 if __name__ == "__main__":
     # training
-    p1 = Player("p1")
-    p2 = Player("p2")
+    p1 = AI("p1")
+    p2 = AI("p2")
 
     st = State(p1, p2)
     print("training...")
     st.play(3000)
+
+
