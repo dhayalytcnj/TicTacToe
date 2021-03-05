@@ -2,108 +2,136 @@
 '''
 Yash Dhayal, Michael Giordano, Corbin Grosso, & Yuriy
 CSC 426-01
-3/3/2021
 
 Project 1: Self-Learning Tic Tac Toe
 '''
 
 import numpy
 
+#global variables for win, loss, and tie counts
+WIN_COUNT = 0
+LOSS_COUNT = 0
+TIE_COUNT = 0
+
 class State:
+    #initializing some variables
     def __init__(self, p1, p2):
-        self.board = numpy.zeros(3, 3)  #3x3 board with just zeroes
+        self.board = numpy.zeros((3, 3))  #3x3 board with just zeroes
         self.p1 = p1
         self.p2 = p2
-        self.isEnd = False
+        self.gameEnd = False    # check if game is over
         self.boardHash = None
-        # init p1 plays first
-        self.whoseTurn = 1
+        self.whoseTurn = 1      # init p1 plays first
+
 
     # get unique hash of current board state
     def getHash(self):
         self.boardHash = str(self.board.reshape(3 * 3))
         return self.boardHash
 
+
+    # switching player turns after a position is filled
+    def updateState(self, position):
+        self.board[position] = self.whoseTurn
+        if self.whoseTurn == 1:
+            self.whoseTurn = -1 
+        else:
+            self.whoseTurn = 1
+
+
+    # reset board
+    def reset(self):
+        self.board = numpy.zeros((3, 3))
+        self.boardHash = None
+        self.gameEnd = False
+        self.whoseTurn = 1
+
+
+    #determining empty/not claimed positions on board
+    def availableSpots(self):
+        openSpots = []
+        for x in range(3):
+            for y in range(3):
+                if self.board[x, y] == 0:
+                    openSpots.append((x, y))  # need to be tuple
+        return openSpots
+
+
+    #determining winner
     def winner(self):
         # Checking if sum of rows = 3 (for p1 to win) or -3 (for p2 to win)
         for x in range(3):
             if sum(self.board[x, :]) == 3:
-                self.isEnd = True
+                self.gameEnd = True
                 return 1
             if sum(self.board[x, :]) == -3:
-                self.isEnd = True
+                self.gameEnd = True
                 return -1
         
         # Checking if sum of columns = 3 (for p1 to win) or -3 (for p2 to win)
         for x in range(3):
             if sum(self.board[:, x]) == 3:
-                self.isEnd = True
+                self.gameEnd = True
                 return 1
             if sum(self.board[:, x]) == -3:
-                self.isEnd = True
+                self.gameEnd = True
                 return -1
 
         # Checking if sum of diagonals = 3 (for p1 to win) or -3 (for p2 to win)
-        diag_sum1 = sum([self.board[i, i] for i in range(3)])
-        diag_sum2 = sum([self.board[i, 3 - i - 1] for i in range(3)])
+            #OLD CODE: diag_sum1 = sum([self.board[x, x] for x in range(3)]) #bottom left to top right diagonal
+            #OLD CODE: diag_sum2 = sum([self.board[x, 3 - x - 1] for x in range(3)]) #top left to bottom right diagonal
+        diag_sum1 = 0
+        diag_sum2 = 0
+        for x in range(3):  
+            diag_sum1 += self.board[x, x]           #bottom left to top right diagonal sum
+            diag_sum2 += self.board[x, 3 - x - 1]   #top left to bottom right diagonal
+        
+        #Finding which diagonal sum is higher. Abs used for player 2, since their values are negative
         diag_sum = max(abs(diag_sum1), abs(diag_sum2))
         if diag_sum == 3:
-            self.isEnd = True
+            self.gameEnd = True
             if diag_sum1 == 3 or diag_sum2 == 3:
-                return 1
+                return 1    #p1 wins
             else:
-                return -1
+                return -1   #p2 wins
 
         #Checking for tie if no possible positions left and since no prior win conditions were met
-        if len(self.availablePositions()) == 0:
-            self.isEnd = True
+        if len(self.availableSpots()) == 0:
+            self.gameEnd = True
             return 0
         
         #if none of the prior conditions were met, then the game isn't over
-        self.isEnd = False
+        self.gameEnd = False
         return None
 
-    def availablePositions(self):
-        positions = []
-        for x in range(3):
-            for y in range(3):
-                if self.board[x, y] == 0:
-                    positions.append((x, y))  # need to be tuple
-        return positions
-
-    def updateState(self, position):
-        self.board[position] = self.whoseTurn
-        # switch to another player
-        self.whoseTurn = -1 if self.whoseTurn == 1 else 1
 
     # only when game ends
-    def giveReward(self):
+    def winPoints(self):
         result = self.winner()
-        # backpropagate reward
-        if result == 1:
-            self.p1.feedReward(1)
-            self.p2.feedReward(0)
-        elif result == -1:
-            self.p1.feedReward(0)
-            self.p2.feedReward(1)
-        else:
-            self.p1.feedReward(0.1)
-            self.p2.feedReward(0.5)
+        # assigning win points
+        global WIN_COUNT, LOSS_COUNT, TIE_COUNT
+        if result == 1:     #p1 wins
+            self.p1.setWinPoints(1)
+            self.p2.setWinPoints(0)
+            WIN_COUNT += 1
+        elif result == -1:  #p2 wins
+            self.p1.setWinPoints(0)
+            self.p2.setWinPoints(1)
+            LOSS_COUNT += 1
+        else:   #tie
+            self.p1.setWinPoints(0)
+            self.p2.setWinPoints(0)
+            TIE_COUNT += 1
 
-    # board reset
-    def reset(self):
-        self.board = numpy.zeros((3, 3))
-        self.boardHash = None
-        self.isEnd = False
-        self.whoseTurn = 1
 
-    def play(self, rounds=100):
+    # How a match will occur
+    def play(self, rounds):
         for i in range(rounds):
             if i % 1000 == 0:
                 print("Rounds {}".format(i))
-            while not self.isEnd:
+            while not self.gameEnd:
                 # AI 1
-                positions = self.availablePositions()
+                positions = self.availableSpots()
                 p1_action = self.p1.chooseAction(positions, self.board, self.whoseTurn)
                 # take action and upate board state
                 self.updateState(p1_action)
@@ -115,7 +143,7 @@ class State:
                 if win is not None:
                     # self.showBoard()
                     # ended with p1 either win or draw
-                    self.giveReward()
+                    self.winPoints()
                     self.p1.reset()
                     self.p2.reset()
                     self.reset()
@@ -123,7 +151,7 @@ class State:
 
                 else:
                     # AI 2
-                    positions = self.availablePositions()
+                    positions = self.availableSpots()
                     p2_action = self.p2.chooseAction(positions, self.board, self.whoseTurn)
                     self.updateState(p2_action)
                     board_hash = self.getHash()
@@ -133,28 +161,11 @@ class State:
                     if win is not None:
                         # self.showBoard()
                         # ended with p2 either win or draw
-                        self.giveReward()
+                        self.winPoints()
                         self.p1.reset()
                         self.p2.reset()
                         self.reset()
                         break
-
-
-    def showBoard(self):
-        # p1: x  p2: o
-        for i in range(0, 3):
-            print('-------------')
-            out = '| '
-            for j in range(0, 3):
-                if self.board[i, j] == 1:
-                    token = 'x'
-                if self.board[i, j] == -1:
-                    token = 'o'
-                if self.board[i, j] == 0:
-                    token = ' '
-                out += token + ' | '
-            print(out)
-        print('-------------')
 
 
 class AI:
@@ -166,15 +177,27 @@ class AI:
         self.decay_gamma = 0.9
         self.states_value = {}  # state -> value
 
+
+    # reset board
+    def reset(self):
+        self.states = []
+
+
     def getHash(self, board):
         boardHash = str(board.reshape(3 * 3))
         return boardHash
 
+
+    # append a hash state
+    def addState(self, state):
+        self.states.append(state)
+
+
+    # determine AI action
     def chooseAction(self, positions, current_board, symbol):
         if numpy.random.uniform(0, 1) <= self.exp_rate:
             # take random action
-            idx = numpy.random.choice(len(positions))
-            action = positions[idx]
+            action = positions[numpy.random.choice(len(positions))]
         else:
             value_max = -999
             for p in positions:
@@ -189,26 +212,21 @@ class AI:
         # print("{} takes action {}".format(self.name, action))
         return action
 
-    # append a hash state
-    def addState(self, state):
-        self.states.append(state)
 
     # at the end of game, backpropagate and update states value
-    def feedReward(self, reward):
+    def setWinPoints(self, reward):
         for st in reversed(self.states):
             if self.states_value.get(st) is None:
                 self.states_value[st] = 0
             self.states_value[st] += self.lr * (self.decay_gamma * reward - self.states_value[st])
             reward = self.states_value[st]
 
-    def reset(self):
-        self.states = []
-
+'''
     def savePolicy(self):
             fw = open('save.txt', 'w+')
             .dump(self.states_value, fw)
             fw.close()
-
+'''
 
 if __name__ == "__main__":
     # training
@@ -217,6 +235,9 @@ if __name__ == "__main__":
 
     st = State(p1, p2)
     print("training...")
-    st.play(3000)
+    st.play(1000)
+    print("Wins: ", WIN_COUNT)
+    print("Losses: ", LOSS_COUNT)
+    print ("Ties: ", TIE_COUNT)
 
 
