@@ -19,9 +19,9 @@ TOTAL_GAMES = 0
 winRate = []
 loseRate = []
 tieRate = []
-totalTracker = []
+totalTracker = []   #Why do we need this? 
 
-class State:
+class GameState:
     #initializing some variables
     def __init__(self, p1, p2):
         self.board = numpy.zeros((3, 3))  #3x3 board with just zeroes
@@ -248,7 +248,7 @@ if __name__ == "__main__":
     p1 = AI("p1")
     p2 = AI("p2")
 
-    st = State(p1, p2)
+    st = GameState(p1, p2)
     training = input("How many matches do you want the AI to self-train: ")
     while not training.isnumeric():
         print("That is not a number. Try again.\n")
