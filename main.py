@@ -145,7 +145,7 @@ class GameState:
             if i % 1000 == 0:
                 print("Rounds simulated: {}".format(i))
             while not self.gameEnd:
-                # AI 1
+                # AI 1 - See chooseAction method in AI class
                 positions = self.availableSpots()
                 p1_action = self.p1.chooseAction(positions, self.board, self.whoseTurn)
                 # take action and upate board state
@@ -155,9 +155,7 @@ class GameState:
                 # check board status if it is end
 
                 win = self.winner()
-                if win is not None:
-                    # self.showBoard()
-                    # ended with p1 either win or draw
+                if win is not None:  # game ended with p1 either win or draw
                     self.winPoints()
                     self.p1.reset()
                     self.p2.reset()
@@ -165,7 +163,7 @@ class GameState:
                     break
 
                 else:
-                    # AI 2
+                    # AI 2 - CHANGE THIS. Must be fixed alg
                     positions = self.availableSpots()
                     p2_action = self.p2.chooseAction(positions, self.board, self.whoseTurn)
                     self.updateState(p2_action)
@@ -174,7 +172,6 @@ class GameState:
 
                     win = self.winner()
                     if win is not None:
-                        # self.showBoard()
                         # ended with p2 either win or draw
                         self.winPoints()
                         self.p1.reset()
@@ -187,9 +184,9 @@ class AI:
     def __init__(self, name, exp_rate=0.3):
         self.name = name
         self.states = []  # record all positions taken
-        self.lr = 0.2
-        self.exp_rate = exp_rate
-        self.decay_gamma = 0.9
+        self.lr = 0.2   #THIS NEEDS TO GO
+        self.exp_rate = exp_rate    #THIS NEEDS TO GO
+        self.decay_gamma = 0.9      #THIS NEEDS TO GO
         self.states_value = {}  # state -> value
 
 
@@ -215,16 +212,14 @@ class AI:
             action = positions[numpy.random.choice(len(positions))]
         else:
             value_max = -999
-            for p in positions:
+            for x in positions:
                 next_board = current_board.copy()
-                next_board[p] = symbol
+                next_board[x] = symbol
                 next_boardHash = self.getHash(next_board)
                 value = 0 if self.states_value.get(next_boardHash) is None else self.states_value.get(next_boardHash)
-                # print("value", value)
                 if value >= value_max:
                     value_max = value
-                    action = p
-        # print("{} takes action {}".format(self.name, action))
+                    action = x
         return action
 
 
@@ -250,12 +245,12 @@ if __name__ == "__main__":
 
     st = GameState(p1, p2)
     training = input("How many matches do you want the AI to self-train: ")
-    while not training.isnumeric():
+    while not training.isnumeric(): # error checking user input
         print("That is not a number. Try again.\n")
         training = input("How many matches do you want the AI to self-train: ")
 
-
-    print("training...")
+    # Displaying outputs
+    print("Training in process")
     st.play(int(training))
     print("TRAINING COMPLETE")
     print("Wins: ", WIN_COUNT)
