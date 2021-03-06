@@ -7,11 +7,19 @@ Project 1: Self-Learning Tic Tac Toe
 '''
 
 import numpy
+# import matplotlib.pyplot as plt #not on cluster, used to get graphs
 
-#global variables for win, loss, and tie counts
+#global variables for win, loss, and tie counts, as well as total nnumber of games played
 WIN_COUNT = 0
 LOSS_COUNT = 0
 TIE_COUNT = 0
+TOTAL_GAMES = 0
+
+#initializes lists to store win lose and tie rate.
+winRate = []
+loseRate = []
+tieRate = []
+totalTracker = []
 
 class State:
     #initializing some variables
@@ -109,7 +117,7 @@ class State:
     def winPoints(self):
         result = self.winner()
         # assigning win points
-        global WIN_COUNT, LOSS_COUNT, TIE_COUNT
+        global WIN_COUNT, LOSS_COUNT, TIE_COUNT, TOTAL_GAMES
         if result == 1:     #p1 wins
             self.p1.setWinPoints(1)
             self.p2.setWinPoints(0)
@@ -122,6 +130,13 @@ class State:
             self.p1.setWinPoints(0)
             self.p2.setWinPoints(0)
             TIE_COUNT += 1
+        TOTAL_GAMES += 1
+        
+        #used to keep track of outcomes for plots
+        winRate.append(WIN_COUNT / TOTAL_GAMES * 100)
+        loseRate.append(LOSS_COUNT / TOTAL_GAMES * 100)
+        tieRate.append(TIE_COUNT / TOTAL_GAMES * 100)
+        totalTracker.append(TOTAL_GAMES)
 
 
     # How a match will occur
@@ -238,7 +253,8 @@ if __name__ == "__main__":
     while not training.isnumeric():
         print("That is not a number. Try again.\n")
         training = input("How many matches do you want the AI to self-train: ")
-    
+
+
     print("training...")
     st.play(int(training))
     print("TRAINING COMPLETE")
@@ -246,4 +262,27 @@ if __name__ == "__main__":
     print("Losses: ", LOSS_COUNT)
     print ("Ties: ", TIE_COUNT)
 
+    #prints out the graphs of winRate, loseRate, and tieRate. Only works if (matplotlib.pyplot) is installed
+    # plt.plot(totalTracker, winRate)
+    # plt.title('Win Tracker')
+    # plt.xlabel('Number of Games Played')
+    # plt.ylabel('Win Percentage')
+    # plt.ylim([-1, 101])
+    # plt.xlim([1, TOTAL_GAMES])
+    # plt.show()
 
+    # plt.plot(totalTracker, loseRate)
+    # plt.title('Lose Tracker')
+    # plt.xlabel('Number of Games Played')
+    # plt.ylabel('Lose Percentage')
+    # plt.ylim([-1, 101])
+    # plt.xlim([1, TOTAL_GAMES])
+    # plt.show()
+
+    # plt.plot(totalTracker, tieRate)
+    # plt.title('Tie Tracker')
+    # plt.xlabel('Number of Games Played')
+    # plt.ylabel('Draw Percentage')
+    # plt.ylim([-1, 101])
+    # plt.xlim([1, TOTAL_GAMES])
+    # plt.show()
