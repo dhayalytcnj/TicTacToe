@@ -349,6 +349,7 @@ class AI:
         if len(possible_moves) == 1:
             return possible_moves[0]
         else:
+<<<<<<< HEAD
             best_move = None
             best_V_hat = 0
 
@@ -366,6 +367,22 @@ class AI:
                         best_V_hat = self.calculateV_hat(self.calculateFeaturesValues(next_board))
             
             return best_move
+=======
+        '''
+        value_max = -999
+        for x in positions:
+            next_board = current_board.copy()
+            next_board[x] = symbol
+            next_boardHash = self.getHash(next_board)
+            if self.states_value.get(next_boardHash) is None:
+                value = 0
+            else:
+                self.states_value.get(next_boardHash)
+            if value >= value_max:
+                value_max = value
+                action = x
+        return action
+>>>>>>> 22eaa82576a4c6a6834943f9cf3ad082d17fb335
 
 
 if __name__ == "__main__":
