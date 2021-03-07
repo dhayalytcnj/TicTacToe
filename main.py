@@ -82,17 +82,20 @@ class GameState:
     
     # Calculate V_train recursively
     def calculateV_train(self, current_board, current_turn):
-        positions = self.availableSpots()
-        action = self.p1.chooseAction(positions, current_board, current_turn)
+        openSpots = []
+        for x in range(3):
+            for y in range(3):
+                if self.board[x, y] == 0:
+                    openSpots.append((x, y))  # need to be tuple
+        action = self.p1.chooseAction(openSpots, current_board, current_turn)
         # take action and upate board state
         current_board[action] = current_turn
         # check board status if it is end
-        win = self.winnerPredict()
+        win = self.winnerPredict(current_board)
         if win is None:
             self.calculateV_train(numpy.array(list(current_board)), -current_turn)
         else:
             return win
-
 
 
     # reset board
@@ -162,19 +165,19 @@ class GameState:
 
 
     #determining winner
-    def winnerPredict(self):
+    def winnerPredict(self, current_board):
         # Checking if sum of rows = 3 (for p1 to win) or -3 (for p2 to win)
         for x in range(3):
-            if sum(self.board[x, :]) == 3:
+            if sum(current_board[x, :]) == 3:
                 return 1
-            if sum(self.board[x, :]) == -3:
+            if sum(current_board[x, :]) == -3:
                 return -1
         
         # Checking if sum of columns = 3 (for p1 to win) or -3 (for p2 to win)
         for x in range(3):
-            if sum(self.board[:, x]) == 3:
+            if sum(current_board[:, x]) == 3:
                 return 1
-            if sum(self.board[:, x]) == -3:
+            if sum(current_board[:, x]) == -3:
                 return -1
 
         # Checking if sum of diagonals = 3 (for p1 to win) or -3 (for p2 to win)
@@ -183,8 +186,8 @@ class GameState:
         diag_sum1 = 0
         diag_sum2 = 0
         for x in range(3):  
-            diag_sum1 += self.board[x, x]           #bottom left to top right diagonal sum
-            diag_sum2 += self.board[x, 2 - x]   #top left to bottom right diagonal
+            diag_sum1 += current_board[x, x]           #bottom left to top right diagonal sum
+            diag_sum2 += current_board[x, 2 - x]   #top left to bottom right diagonal
         
         #Finding which diagonal sum is higher. Abs used for player 2, since their values are negative
         diag_sum = max(abs(diag_sum1), abs(diag_sum2))
@@ -195,7 +198,12 @@ class GameState:
                 return -1   #p2 wins
 
         #Checking for tie if no possible positions left and since no prior win conditions were met
-        if len(self.availableSpots()) == 0:
+        openSpots = []
+        for x in range(3):
+            for y in range(3):
+                if current_board[x, y] == 0:
+                    openSpots.append((x, y))
+        if len(openSpots) == 0:
             return 0
         
         #if none of the prior conditions were met, then the game isn't over
@@ -208,16 +216,16 @@ class GameState:
         # assigning win points
         global WIN_COUNT, LOSS_COUNT, TIE_COUNT, TOTAL_GAMES
         if result == 1:     #p1 wins
-            self.p1.setWinPoints(1)
-            self.p2.setWinPoints(0)
+            #self.p1.setWinPoints(1)
+            #self.p2.setWinPoints(0)
             WIN_COUNT += 1
         elif result == -1:  #p2 wins
-            self.p1.setWinPoints(0)
-            self.p2.setWinPoints(1)
+            #self.p1.setWinPoints(0)
+            #self.p2.setWinPoints(1)
             LOSS_COUNT += 1
         else:   #tie
-            self.p1.setWinPoints(0)
-            self.p2.setWinPoints(0)
+            #self.p1.setWinPoints(0)
+            #self.p2.setWinPoints(0)
             TIE_COUNT += 1
         TOTAL_GAMES += 1
         
@@ -270,16 +278,11 @@ class GameState:
 
 
 class AI:
-    def __init__(self, name, learning_rate=0.3):
+    def __init__(self, name, learning_rate=0.1):
         self.name = name
         self.states = []  # record all positions taken
-<<<<<<< HEAD
-        self.learning_rate = learning_rate  # determine rate at which the AI learns
-        self.lr = 0.2   #THIS NEEDS TO GO
-        self.exp_rate = exp_rate    #THIS NEEDS TO GO
-        self.decay_gamma = 0.9      #THIS NEEDS TO GO
->>>>>>> 4234b382dd236816f4f81221e59ea7e7a265b4f7
         self.states_value = {}  # state -> value
+        self.learning_rate = learning_rate
         self.weights = [0 for i in range(3)] # initialize to a list of 3 zeroes
 
 
@@ -298,7 +301,6 @@ class AI:
         self.states.append(state)
 
     
-
     # Calculate a new value for each of the weights
     def updateWeights(self, features, V_train):
         V_hat = 0
@@ -311,22 +313,26 @@ class AI:
 
     # determine AI action
     def chooseAction(self, positions, current_board, symbol):
+        action = 0
+        '''
         if numpy.random.uniform(0, 1) <= self.learning_rate:
             # take random action
             action = positions[numpy.random.choice(len(positions))]
         else:
-            value_max = -999
-            for x in positions:
-                next_board = current_board.copy()
-                next_board[x] = symbol
-                next_boardHash = self.getHash(next_board)
-                value = 0 if self.states_value.get(next_boardHash) is None else self.states_value.get(next_boardHash)
-                if value >= value_max:
-                    value_max = value
-                    action = x
+        '''
+        value_max = -999
+        for x in positions:
+            next_board = current_board.copy()
+            next_board[x] = symbol
+            next_boardHash = self.getHash(next_board)
+            value = 0 if self.states_value.get(next_boardHash) is None 
+            else self.states_value.get(next_boardHash)
+            if value >= value_max:
+                value_max = value
+                action = x
         return action
 
-
+'''
     # at the end of game, backpropagate and update states value
     def setWinPoints(self, reward):
         for st in reversed(self.states):
@@ -334,7 +340,7 @@ class AI:
                 self.states_value[st] = 0
             self.states_value[st] += self.lr * (self.decay_gamma * reward - self.states_value[st])
             reward = self.states_value[st]
-
+'''
 '''
     def savePolicy(self):
             fw = open('save.txt', 'w+')
