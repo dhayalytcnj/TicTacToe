@@ -325,8 +325,10 @@ class AI:
             next_board = current_board.copy()
             next_board[x] = symbol
             next_boardHash = self.getHash(next_board)
-            value = 0 if self.states_value.get(next_boardHash) is None 
-            else self.states_value.get(next_boardHash)
+            if self.states_value.get(next_boardHash) is None:
+                value = 0
+            else:
+                self.states_value.get(next_boardHash)
             if value >= value_max:
                 value_max = value
                 action = x
