@@ -30,6 +30,8 @@ class State:
         self.gameEnd = False    # check if game is over
         self.boardHash = None
         self.whoseTurn = 1      # init p1 plays first
+        self.features = [0 for i in range(3)]      # init to a list of three zeroes; tracks the boards current features
+        self.V_train = 0    # init to 0; will be calculated before use
 
 
     # get unique hash of current board state
@@ -45,6 +47,52 @@ class State:
             self.whoseTurn = -1 
         else:
             self.whoseTurn = 1
+        self.calculateFeaturesValues()
+        self.calculateV_train(numpy.array(list(self.board)), self.whoseTurn)
+        self.p1.updateWeights(self.features, self.V_train)
+
+
+    # determines the value of the board features
+    def calculateFeaturesValues(self):
+        self.features[2] = self.board[1,1] # features[2] tracks who, if anyone, has taken the center space
+        for i in range(3):
+            # features[0] is the total number of rows, columns, and diagonals that have 2 of Player 1's spaces and 1 open space
+            # features[1] is the total number of rows, columns, and diagonals that have 2 of Player 2's spaces and 1 open space
+            temp = [self.board[i,0], self.board[i,1], self.board[i,2]] # checks each column
+            if sum(temp) == 2: # if the sum is 2, then there has to be two 1s and a 0. No other combination could make this
+                self.features[0] += 1
+            if sum(temp) == -2: # if the sum is -2, then there has to be two -1s and a 0. No other combination could make this
+                self.features[1] += 1
+            temp = [self.board[0,i], self.board[1,i], self.board[2,i]] # checks each row
+            if sum(temp) == 2:
+                self.features[0] += 1
+            if sum(temp) == -2:
+                self.features[1] += 1
+        temp = [self.board[0,0], self.board[1,1], self.board[2,2]] # checks upper left diagonal
+        if sum(temp) == 2:
+            self.features[0] += 1
+        if sum(temp) == -2:
+            self.features[1] += 1
+        temp = [self.board[2,0], self.board[1,1], self.board[0,2]] # checks upper right diagonal
+        if sum(temp) == 2:
+            self.features[0] += 1
+        if sum(temp) == -2:
+            self.features[1] += 1
+
+    
+    # Calculate V_train recursively
+    def calculateV_train(self, current_board, current_turn):
+        positions = self.availableSpots()
+        action = self.p1.chooseAction(positions, current_board, current_turn)
+        # take action and upate board state
+        current_board[action] = current_turn
+        # check board status if it is end
+        win = self.winnerPredict()
+        if win is None:
+            self.calculateV_train(numpy.array(list(current_board)), -current_turn)
+        else:
+            return win
+
 
 
     # reset board
@@ -113,6 +161,47 @@ class State:
         return None
 
 
+    #determining winner
+    def winnerPredict(self):
+        # Checking if sum of rows = 3 (for p1 to win) or -3 (for p2 to win)
+        for x in range(3):
+            if sum(self.board[x, :]) == 3:
+                return 1
+            if sum(self.board[x, :]) == -3:
+                return -1
+        
+        # Checking if sum of columns = 3 (for p1 to win) or -3 (for p2 to win)
+        for x in range(3):
+            if sum(self.board[:, x]) == 3:
+                return 1
+            if sum(self.board[:, x]) == -3:
+                return -1
+
+        # Checking if sum of diagonals = 3 (for p1 to win) or -3 (for p2 to win)
+            #OLD CODE: diag_sum1 = sum([self.board[x, x] for x in range(3)]) #bottom left to top right diagonal
+            #OLD CODE: diag_sum2 = sum([self.board[x, 3 - x - 1] for x in range(3)]) #top left to bottom right diagonal
+        diag_sum1 = 0
+        diag_sum2 = 0
+        for x in range(3):  
+            diag_sum1 += self.board[x, x]           #bottom left to top right diagonal sum
+            diag_sum2 += self.board[x, 2 - x]   #top left to bottom right diagonal
+        
+        #Finding which diagonal sum is higher. Abs used for player 2, since their values are negative
+        diag_sum = max(abs(diag_sum1), abs(diag_sum2))
+        if diag_sum == 3:
+            if diag_sum1 == 3 or diag_sum2 == 3:
+                return 1    #p1 wins
+            else:
+                return -1   #p2 wins
+
+        #Checking for tie if no possible positions left and since no prior win conditions were met
+        if len(self.availableSpots()) == 0:
+            return 0
+        
+        #if none of the prior conditions were met, then the game isn't over
+        return None
+
+
     # only when game ends
     def winPoints(self):
         result = self.winner()
@@ -143,7 +232,7 @@ class State:
     def play(self, rounds):
         for i in range(rounds):
             if i % 1000 == 0:
-                print("Rounds simulated: {}".format(i))
+                print(f"Rounds simulated: {i}")
             while not self.gameEnd:
                 # AI 1
                 positions = self.availableSpots()
@@ -184,13 +273,12 @@ class State:
 
 
 class AI:
-    def __init__(self, name, exp_rate=0.3):
+    def __init__(self, name, learning_rate=0.3):
         self.name = name
         self.states = []  # record all positions taken
-        self.lr = 0.2
-        self.exp_rate = exp_rate
-        self.decay_gamma = 0.9
+        self.learning_rate = learning_rate  # determine rate at which the AI learns
         self.states_value = {}  # state -> value
+        self.weights = [0 for i in range(3)] # initialize to a list of 3 zeroes
 
 
     # reset board
@@ -207,10 +295,21 @@ class AI:
     def addState(self, state):
         self.states.append(state)
 
+    
+
+    # Calculate a new value for each of the weights
+    def updateWeights(self, features, V_train):
+        V_hat = 0
+        for i in range(len(self.weights)):
+            V_hat += self.weights[i] * features[i] # Calculate V_hat = w1x1 + w2x2 + w3x3
+
+        for i in range(len(self.weights)):
+            self.weights[i] = self.weights[i] + self.learning_rate * (V_train - V_hat) * features[i]
+
 
     # determine AI action
     def chooseAction(self, positions, current_board, symbol):
-        if numpy.random.uniform(0, 1) <= self.exp_rate:
+        if numpy.random.uniform(0, 1) <= self.learning_rate:
             # take random action
             action = positions[numpy.random.choice(len(positions))]
         else:
