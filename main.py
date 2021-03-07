@@ -7,7 +7,7 @@ Project 1: Self-Learning Tic Tac Toe
 '''
 
 import numpy
-# import matplotlib.pyplot as plt #not on cluster, used to get graphs
+import matplotlib.pyplot as plt #not on cluster, used to get graphs
 
 #global variables for win, loss, and tie counts, as well as total nnumber of games played
 WIN_COUNT = 0
@@ -22,8 +22,17 @@ tieRate = []
 totalTracker = []   #Why do we need this? 
 
 class GameState:
+    """
+    Class containing data about the 
+    """
     #initializing some variables
     def __init__(self, p1, p2):
+        """
+        :param p1: AI player 1, the AI that is being actively trained
+        :param p2: AI player 2, the opponent of the AI that is being actively trained
+        :type p1: AI class object
+        :type p2: AI class object
+        """
         self.board = numpy.zeros((3, 3))  #3x3 board with just zeroes
         self.p1 = p1
         self.p2 = p2
@@ -48,7 +57,7 @@ class GameState:
         else:
             self.whoseTurn = 1
         self.calculateFeaturesValues()
-        self.calculateV_train(numpy.array(list(self.board)), self.whoseTurn)
+        self.calculateV_train(self.board.copy(), self.whoseTurn)
         self.p1.updateWeights(self.features, self.V_train)
 
 
@@ -79,20 +88,28 @@ class GameState:
         if sum(temp) == -2:
             self.features[1] += 1
 
-    
+    #
+    #
+    # In theory, calculateV_train works, but it causes RecursionError: maximum recursion depth exceeded in comparison
+    # 
+    #
+    #
     # Calculate V_train recursively
-    def calculateV_train(self, current_board, current_turn):
+    def calculateV_train(self, current_board, current_turn): 
         positions = self.availableSpots()
-        action = self.p1.chooseAction(positions, current_board, current_turn)
+        if current_turn == 1:
+            action = self.p1.chooseAction(positions, current_board, current_turn)
+        else:
+            action = self.p2.chooseAction(positions, current_board, current_turn)
         # take action and upate board state
         current_board[action] = current_turn
         # check board status if it is end
-        win = self.winnerPredict()
+        win = self.winnerPredict(current_board)
         if win is None:
-            self.calculateV_train(numpy.array(list(current_board)), -current_turn)
+            # current_board is typecasted to a list and back to a numpy array in order to avoid altering the original board on accident
+            self.calculateV_train(current_board.copy(), -current_turn)
         else:
             return win
-
 
 
     # reset board
@@ -109,6 +126,16 @@ class GameState:
         for x in range(3):
             for y in range(3):
                 if self.board[x, y] == 0:
+                    openSpots.append((x, y))  # need to be tuple
+        return openSpots
+
+
+    #determining empty/not claimed positions on board
+    def availableSpotsPredict(self, current_board):
+        openSpots = []
+        for x in range(3):
+            for y in range(3):
+                if current_board[x, y] == 0:
                     openSpots.append((x, y))  # need to be tuple
         return openSpots
 
@@ -161,41 +188,39 @@ class GameState:
         return None
 
 
-    #determining winner
-    def winnerPredict(self):
+    #determining winner of a hypothetical continuation of the current game
+    def winnerPredict(self, current_board):
         # Checking if sum of rows = 3 (for p1 to win) or -3 (for p2 to win)
-        for x in range(3):
-            if sum(self.board[x, :]) == 3:
+        for i in range(3):
+            temp = [current_board[0, i], current_board[1, i], current_board[2, i]]
+            if sum(temp) == 3:
                 return 1
-            if sum(self.board[x, :]) == -3:
+            elif sum(temp) == -3:
                 return -1
         
         # Checking if sum of columns = 3 (for p1 to win) or -3 (for p2 to win)
-        for x in range(3):
-            if sum(self.board[:, x]) == 3:
+        for i in range(3):
+            temp = [current_board[i, 0], current_board[i, 1], current_board[i, 2]]
+            if sum(temp) == 3:
                 return 1
-            if sum(self.board[:, x]) == -3:
+            elif sum(temp) == -3:
                 return -1
 
         # Checking if sum of diagonals = 3 (for p1 to win) or -3 (for p2 to win)
-            #OLD CODE: diag_sum1 = sum([self.board[x, x] for x in range(3)]) #bottom left to top right diagonal
-            #OLD CODE: diag_sum2 = sum([self.board[x, 3 - x - 1] for x in range(3)]) #top left to bottom right diagonal
-        diag_sum1 = 0
-        diag_sum2 = 0
-        for x in range(3):  
-            diag_sum1 += self.board[x, x]           #bottom left to top right diagonal sum
-            diag_sum2 += self.board[x, 2 - x]   #top left to bottom right diagonal
-        
-        #Finding which diagonal sum is higher. Abs used for player 2, since their values are negative
-        diag_sum = max(abs(diag_sum1), abs(diag_sum2))
-        if diag_sum == 3:
-            if diag_sum1 == 3 or diag_sum2 == 3:
-                return 1    #p1 wins
-            else:
-                return -1   #p2 wins
+        temp = [current_board[0,0], current_board[1,1], current_board[2,2]]
+        if sum(temp) == 3:
+            return 1
+        elif sum(temp) == -3:
+            return -1
+
+        temp = [current_board[0,2], current_board[1,1], current_board[2,0]]
+        if sum(temp) == 3:
+            return 1
+        elif sum(temp) == -3:
+            return -1
 
         #Checking for tie if no possible positions left and since no prior win conditions were met
-        if len(self.availableSpots()) == 0:
+        if len(self.availableSpotsPredict(current_board)) == 0:
             return 0
         
         #if none of the prior conditions were met, then the game isn't over
@@ -203,21 +228,15 @@ class GameState:
 
 
     # only when game ends
-    def winPoints(self):
+    def CountEndGameStatus(self):
         result = self.winner()
         # assigning win points
         global WIN_COUNT, LOSS_COUNT, TIE_COUNT, TOTAL_GAMES
         if result == 1:     #p1 wins
-            self.p1.setWinPoints(1)
-            self.p2.setWinPoints(0)
             WIN_COUNT += 1
         elif result == -1:  #p2 wins
-            self.p1.setWinPoints(0)
-            self.p2.setWinPoints(1)
             LOSS_COUNT += 1
         else:   #tie
-            self.p1.setWinPoints(0)
-            self.p2.setWinPoints(0)
             TIE_COUNT += 1
         TOTAL_GAMES += 1
         
@@ -231,10 +250,11 @@ class GameState:
     # How a match will occur
     def play(self, rounds):
         for i in range(rounds):
+            print(self.board)
             if i % 1000 == 0:
                 print(f"Rounds simulated: {i}")
             while not self.gameEnd:
-                # AI 1 - See chooseAction method in AI class
+                # AI 1
                 positions = self.availableSpots()
                 p1_action = self.p1.chooseAction(positions, self.board, self.whoseTurn)
                 # take action and upate board state
@@ -244,15 +264,16 @@ class GameState:
                 # check board status if it is end
 
                 win = self.winner()
-                if win is not None:  # game ended with p1 either win or draw
-                    self.winPoints()
+                if win is not None:
+                    # self.showBoard()
+                    # ended with p1 either win or draw
                     self.p1.reset()
                     self.p2.reset()
                     self.reset()
                     break
 
                 else:
-                    # AI 2 - CHANGE THIS. Must be fixed alg
+                    # AI 2
                     positions = self.availableSpots()
                     p2_action = self.p2.chooseAction(positions, self.board, self.whoseTurn)
                     self.updateState(p2_action)
@@ -261,8 +282,8 @@ class GameState:
 
                     win = self.winner()
                     if win is not None:
+                        # self.showBoard()
                         # ended with p2 either win or draw
-                        self.winPoints()
                         self.p1.reset()
                         self.p2.reset()
                         self.reset()
@@ -273,13 +294,7 @@ class AI:
     def __init__(self, name, learning_rate=0.3):
         self.name = name
         self.states = []  # record all positions taken
-<<<<<<< HEAD
         self.learning_rate = learning_rate  # determine rate at which the AI learns
-=======
-        self.lr = 0.2   #THIS NEEDS TO GO
-        self.exp_rate = exp_rate    #THIS NEEDS TO GO
-        self.decay_gamma = 0.9      #THIS NEEDS TO GO
->>>>>>> 4234b382dd236816f4f81221e59ea7e7a265b4f7
         self.states_value = {}  # state -> value
         self.weights = [0 for i in range(3)] # initialize to a list of 3 zeroes
 
@@ -298,13 +313,18 @@ class AI:
     def addState(self, state):
         self.states.append(state)
 
-    
 
-    # Calculate a new value for each of the weights
-    def updateWeights(self, features, V_train):
+    # Calculate V^
+    def calculateV_hat(self, features):
         V_hat = 0
         for i in range(len(self.weights)):
             V_hat += self.weights[i] * features[i] # Calculate V_hat = w1x1 + w2x2 + w3x3
+        return V_hat
+
+
+    # Calculate a new value for each of the weights
+    def updateWeights(self, features, V_train):
+        V_hat = self.calculateV_hat(features)
 
         for i in range(len(self.weights)):
             self.weights[i] = self.weights[i] + self.learning_rate * (V_train - V_hat) * features[i]
@@ -312,36 +332,13 @@ class AI:
 
     # determine AI action
     def chooseAction(self, positions, current_board, symbol):
-        if numpy.random.uniform(0, 1) <= self.learning_rate:
-            # take random action
-            action = positions[numpy.random.choice(len(positions))]
-        else:
-            value_max = -999
-            for x in positions:
-                next_board = current_board.copy()
-                next_board[x] = symbol
-                next_boardHash = self.getHash(next_board)
-                value = 0 if self.states_value.get(next_boardHash) is None else self.states_value.get(next_boardHash)
-                if value >= value_max:
-                    value_max = value
-                    action = x
+        possible_moves = current_board.availableSpots()
+
+        for i in range(len(possible_moves)):
+            
+        
         return action
 
-
-    # at the end of game, backpropagate and update states value
-    def setWinPoints(self, reward):
-        for st in reversed(self.states):
-            if self.states_value.get(st) is None:
-                self.states_value[st] = 0
-            self.states_value[st] += self.lr * (self.decay_gamma * reward - self.states_value[st])
-            reward = self.states_value[st]
-
-'''
-    def savePolicy(self):
-            fw = open('save.txt', 'w+')
-            .dump(self.states_value, fw)
-            fw.close()
-'''
 
 if __name__ == "__main__":
     # training
@@ -350,12 +347,12 @@ if __name__ == "__main__":
 
     st = GameState(p1, p2)
     training = input("How many matches do you want the AI to self-train: ")
-    while not training.isnumeric(): # error checking user input
+    while not training.isnumeric():
         print("That is not a number. Try again.\n")
         training = input("How many matches do you want the AI to self-train: ")
 
-    # Displaying outputs
-    print("Training in process")
+
+    print("training...")
     st.play(int(training))
     print("TRAINING COMPLETE")
     print("Wins: ", WIN_COUNT)
@@ -363,26 +360,26 @@ if __name__ == "__main__":
     print ("Ties: ", TIE_COUNT)
 
     #prints out the graphs of winRate, loseRate, and tieRate. Only works if (matplotlib.pyplot) is installed
-    # plt.plot(totalTracker, winRate)
-    # plt.title('Win Tracker')
-    # plt.xlabel('Number of Games Played')
-    # plt.ylabel('Win Percentage')
-    # plt.ylim([-1, 101])
-    # plt.xlim([1, TOTAL_GAMES])
-    # plt.show()
+    plt.plot(totalTracker, winRate)
+    plt.title('Win Tracker')
+    plt.xlabel('Number of Games Played')
+    plt.ylabel('Win Percentage')
+    plt.ylim([-1, 101])
+    plt.xlim([1, TOTAL_GAMES])
+    plt.show()
 
-    # plt.plot(totalTracker, loseRate)
-    # plt.title('Lose Tracker')
-    # plt.xlabel('Number of Games Played')
-    # plt.ylabel('Lose Percentage')
-    # plt.ylim([-1, 101])
-    # plt.xlim([1, TOTAL_GAMES])
-    # plt.show()
+    plt.plot(totalTracker, loseRate)
+    plt.title('Lose Tracker')
+    plt.xlabel('Number of Games Played')
+    plt.ylabel('Lose Percentage')
+    plt.ylim([-1, 101])
+    plt.xlim([1, TOTAL_GAMES])
+    plt.show()
 
-    # plt.plot(totalTracker, tieRate)
-    # plt.title('Tie Tracker')
-    # plt.xlabel('Number of Games Played')
-    # plt.ylabel('Draw Percentage')
-    # plt.ylim([-1, 101])
-    # plt.xlim([1, TOTAL_GAMES])
-    # plt.show()
+    plt.plot(totalTracker, tieRate)
+    plt.title('Tie Tracker')
+    plt.xlabel('Number of Games Played')
+    plt.ylabel('Draw Percentage')
+    plt.ylim([-1, 101])
+    plt.xlim([1, TOTAL_GAMES])
+    plt.show()
