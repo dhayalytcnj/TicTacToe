@@ -275,7 +275,6 @@ class AI:
         self.states = []  # record all positions taken
 <<<<<<< HEAD
         self.learning_rate = learning_rate  # determine rate at which the AI learns
-=======
         self.lr = 0.2   #THIS NEEDS TO GO
         self.exp_rate = exp_rate    #THIS NEEDS TO GO
         self.decay_gamma = 0.9      #THIS NEEDS TO GO
