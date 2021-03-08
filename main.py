@@ -63,41 +63,6 @@ class GameState:
         self.p1.updateWeights(self.features, self.V_train)
 
 
-    # def calculateFeaturesValues(self):
-    #     """
-    #     Calculates the values of each of the board features being tracked.
-    #     features[0] is the number of rows/columns/diagonals that contain two 1s and a 0
-    #     features[1] is the number of rows/columns/diagonals that contain two -1s and a 0
-    #     features[2] is the player who has claimed it, 1 for the AI being trained, -1 for the opposing AI
-    #     """
-
-    #     self.features = [0 for i in range(3)]
-    #     self.features[2] = self.board[1,1] # features[2] tracks who, if anyone, has taken the center space
-    #     for i in range(3):
-    #         temp = [self.board[i,0], self.board[i,1], self.board[i,2]] # checks each column
-    #         # if the sum is 2, then there has to be two 1s and a 0. No other combination could make this
-    #         if sum(temp) == 2: 
-    #             self.features[0] += 1
-    #         # if the sum is -2, then there has to be two -1s and a 0. No other combination could make this
-    #         if sum(temp) == -2: 
-    #             self.features[1] += 1
-    #         temp = [self.board[0,i], self.board[1,i], self.board[2,i]] # checks each row
-    #         if sum(temp) == 2:
-    #             self.features[0] += 1
-    #         if sum(temp) == -2:
-    #             self.features[1] += 1
-    #     temp = [self.board[0,0], self.board[1,1], self.board[2,2]] # checks upper left diagonal
-    #     if sum(temp) == 2:
-    #         self.features[0] += 1
-    #     if sum(temp) == -2:
-    #         self.features[1] += 1
-    #     temp = [self.board[2,0], self.board[1,1], self.board[0,2]] # checks upper right diagonal
-    #     if sum(temp) == 2:
-    #         self.features[0] += 1
-    #     if sum(temp) == -2:
-    #         self.features[1] += 1
-
-
     def calculateV_train(self, current_board, turn): 
         """
         Calculates the value of the V_train variable by recursively checking every possible way the game could play out
@@ -327,7 +292,6 @@ class AI:
         self.weights = [1 for i in range(3)] # initialize to a list of 3 zeroes
 
 
-    # determines the value of the board features given a board
     def calculateFeaturesValues(self, current_board):
         """
         Calculates the values of each of the board features being tracked.
@@ -337,10 +301,8 @@ class AI:
         """
 
         features = [0 for i in range(3)]
-        features[2] = current_board[1,1] # features[2] tracks who, if anyone, has taken the center space
+        features[2] = current_board[1,1]
         for i in range(3):
-            # features[0] is the total number of rows, columns, and diagonals that have 2 of Player 1's spaces and 1 open space
-            # features[1] is the total number of rows, columns, and diagonals that have 2 of Player 2's spaces and 1 open space
             temp = [current_board[i,0], current_board[i,1], current_board[i,2]] # checks each column
             if sum(temp) == 2: # if the sum is 2, then there has to be two 1s and a 0. No other combination could make this
                 features[0] += 1
@@ -364,16 +326,30 @@ class AI:
         return features
 
 
-    # Calculate V^
     def calculateV_hat(self, features):
+        """
+        Calculates V_hat based on the provided features
+
+        :param features: features of a board state (explained in detail in the calculateFeatureValues() documentation)
+        :type features: list(int)
+        """
+
         V_hat = 0
         for i in range(len(self.weights)):
             V_hat += self.weights[i] * features[i] # Calculate V_hat = w1x1 + w2x2 + w3x3
         return V_hat
 
 
-    # Calculate a new value for each of the weights
     def updateWeights(self, features, V_train):
+        """
+        Recalculate the value of each of the weights using the provided features and V_train value
+
+        :param features: features of a board state (explained in detail in the calculateFeatureValues() documentation)
+        :param V_train: value of the board state determined by the training data
+        :type features: list(int)
+        :type V_train: int
+        """
+
         V_hat = self.calculateV_hat(features)
 
         for i in range(len(self.weights)):
@@ -382,6 +358,17 @@ class AI:
 
     # determine AI action
     def chooseAction(self, positions, current_board, current_turn):
+        """
+        Decides and returns the best possible move choice available in the form of coordinates to the space to take
+
+        :param positions: list of open spaces on the board
+        :param current_board: Current state of the board
+        :param current_turn: which AI is currently making a move
+        :type positions: list(numpy array)
+        :type current_board: numpy array
+        :type current_turn: int
+        """
+
         possible_moves = []
         for i in range(3):
             for j in range(3):
@@ -430,7 +417,7 @@ if __name__ == "__main__":
     print ("Ties: ", TIE_COUNT)
 
     #prints out the graphs of winRate, loseRate, and tieRate. Only works if (matplotlib.pyplot) is installed
-    generate_graphs = input("Would you like to generate new graphs (located in the project1_D3 files)" + 
+    generate_graphs = input("Would you like to generate new graphs (located in the project1_D3 files) " + 
     "based on the newly generaed data?" + 
     "\nWARNING: This will overwrite those files if they already exist in the working directory." +
     "\nEnter 1 for yes or 0 for no.")
@@ -439,7 +426,7 @@ if __name__ == "__main__":
         generate_graphs = input("Would you like to generate new graphs (located in the project1_D3 files)" + 
         "based on the newly generaed data?" + 
         "\nWARNING: This will overwrite those files if they already exist in the working directory." +
-        "\nEnter 1 for yes or 0 for no.")
+        "\nEnter 1 for yes or 0 for no: ")
 
     if generate_graphs == 1:
         plt.plot(totalTracker, winRate)
