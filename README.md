@@ -15,7 +15,7 @@ How to Run:
 - Open the terminal
 - Navigate to the location where the TicTacToe.tar.gz file was downloaded
     Ex. if downloaded to Downloads, enter "cd Downloads"
-- To extract the CJ_YD_Prj1.tar.gz file, type "tar -zxvf TicTacToe.tar.gz". 
+- To extract the TicTacToe.tar.gz file, type "tar -zxvf TicTacToe.tar.gz". 
 - Type "cd TicTacToe" to get into the extracted folder named TicTacToe containing the python code
     - NOTE: To run the following scripts, make sure you have python3 installed.
 - Type "python3 main.py" and hit enter
