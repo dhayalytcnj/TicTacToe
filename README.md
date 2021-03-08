@@ -1,8 +1,14 @@
 # TicTacToe
 TicTacToe learning program for MachineLearning
 
+CONTENTS:
+README.md     - The readme for the project
+main.py       - The source code of the project
+project1_D1   - Deliverable 1
+project1_D4   - Deliverable 4
 
-When you open our file you can see a couple different documents. 
+
+
 
 In our board features file you can see our initial conditions set for the tic tac toe program and how we went about in creating it. The main program being built around these conditions and having it run by these rules.
 
