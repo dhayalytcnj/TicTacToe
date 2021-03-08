@@ -6,6 +6,7 @@ Project 1: Self-Learning Tic Tac Toe
 
 import numpy
 import matplotlib.pyplot as plt #not on cluster, used to get graphs
+import random
 
 #global variables for win, loss, and tie counts, as well as total nnumber of games played
 WIN_COUNT = 0
@@ -51,12 +52,13 @@ class GameState:
         else:
             TURN = 1
         self.calculateFeaturesValues()
-        # self.calculateV_train(self.board.copy(), TURN)
+        self.calculateV_train(self.board.copy(), TURN)
         self.p1.updateWeights(self.features, self.V_train)
 
 
     # determines the value of the board features
     def calculateFeaturesValues(self):
+        self.features = [0 for i in range(3)]
         self.features[2] = self.board[1,1] # features[2] tracks who, if anyone, has taken the center space
         for i in range(3):
             # features[0] is the total number of rows, columns, and diagonals that have 2 of Player 1's spaces and 1 open space
@@ -107,6 +109,7 @@ class GameState:
         self.board = numpy.zeros((3, 3))
         self.boardHash = None
         self.gameEnd = False
+        self.features = [0 for i in range(3)]
         TURN = 1
 
 
@@ -249,8 +252,6 @@ class GameState:
             # if i % 1000 == 0:
             print(f"Rounds simulated: {i}")
             while not self.gameEnd:
-                print(self.board)
-                print(self.p1.weights)
                 positions = self.availableSpots()
                 if TURN == 1:
                     action = self.p1.chooseAction(positions, self.board, TURN)
@@ -261,6 +262,9 @@ class GameState:
 
                 win = self.winner()
                 if win is not None:
+                    # self.calculateFeaturesValues()
+                    # self.calculateV_train(self.board.copy(), TURN)
+                    # self.p1.updateWeights(self.features, self.V_train)
                     self.countEndGameStatus()
                     # ended with p1 either win or draw
                     self.p1.reset()
@@ -273,25 +277,12 @@ class AI:
     def __init__(self, name, learning_rate=0.1):
         self.name = name
         self.learning_rate = learning_rate  # determine rate at which the AI learns
-        self.weights = [0.5, 0.5, 0.5] # initialize to a list of 3 zeroes
+        self.weights = [1 for i in range(3)] # initialize to a list of 3 zeroes
 
 
     # reset board
     def reset(self):
-        self.states = []
-
-
-    # append a hash state
-    def addState(self, state, current_board, current_turn):
-        self.states.append(state)
-        current_board[position] = current_turn
-        if current_turn == 1:
-            current_turn = -1 
-        else:
-            current_turn = 1
-        self.calculateFeaturesValues()
-        self.calculateV_train(self.board.copy(), current_turn)
-        self.p1.updateWeights(self.features, self.V_train)
+        self.weights = [1 for i in range(3)]
 
 
     # determines the value of the board features given a board
@@ -337,7 +328,9 @@ class AI:
         V_hat = self.calculateV_hat(features)
 
         for i in range(len(self.weights)):
+            print(f'{i}: w={self.weights[i]}, x={features[i]}, V_train={V_train}, V_hat={V_hat}')
             self.weights[i] = self.weights[i] + self.learning_rate * (V_train - V_hat) * features[i]
+        print()
 
 
     # determine AI action
@@ -349,38 +342,24 @@ class AI:
                     possible_moves.append((i,j))
         if len(possible_moves) == 1:
             return possible_moves[0]
+        elif len(possible_moves) == 9 and current_turn == -1:
+            return possible_moves[int(random.randint(0, 8))]
         else:
             best_move = None
             best_V_hat = 0
 
-
             for move in possible_moves:
-                if TURN == 1:
-                    print("if")
-                    if best_move is None:
-                        next_board = current_board.copy()
-                        next_board[move] = current_turn
-                        best_V_hat = self.calculateV_hat(self.calculateFeaturesValues(next_board))
-                        best_move = move
-                    else:
-                        next_board = current_board.copy()
-                        next_board[move] = current_turn
-                        if self.calculateV_hat(self.calculateFeaturesValues(next_board)) > best_V_hat:
-                            best_move = move
-                            best_V_hat = self.calculateV_hat(self.calculateFeaturesValues(next_board))
+                if best_move is None:
+                    next_board = current_board.copy()
+                    next_board[move] = current_turn
+                    best_V_hat = self.calculateV_hat(self.calculateFeaturesValues(next_board))
+                    best_move = move
                 else:
-                    print("else")
-                    if best_move is None:
-                        next_board = current_board.copy()
-                        next_board[move] = current_turn
-                        best_V_hat = self.calculateV_hat(self.calculateFeaturesValues(next_board))
+                    next_board = current_board.copy()
+                    next_board[move] = current_turn
+                    if self.calculateV_hat(self.calculateFeaturesValues(next_board)) > best_V_hat:
                         best_move = move
-                    else:
-                        next_board = current_board.copy()
-                        next_board[move] = current_turn
-                        if self.calculateV_hat(self.calculateFeaturesValues(next_board)) > best_V_hat:
-                            best_move = move
-                            best_V_hat = self.calculateV_hat(self.calculateFeaturesValues(next_board))
+                        best_V_hat = self.calculateV_hat(self.calculateFeaturesValues(next_board))
             
             return best_move
 
@@ -403,6 +382,7 @@ if __name__ == "__main__":
     print("Wins: ", WIN_COUNT)
     print("Losses: ", LOSS_COUNT)
     print ("Ties: ", TIE_COUNT)
+    print("W/L Ratio:", WIN_COUNT / LOSS_COUNT)
 
     #prints out the graphs of winRate, loseRate, and tieRate. Only works if (matplotlib.pyplot) is installed
     # plt.plot(totalTracker, winRate)
