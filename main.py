@@ -20,100 +20,129 @@ loseRate = []
 tieRate = []
 totalTracker = []
 
-TURN = 1
+TURN = 1 # tracks which AI is currently making a move
 class GameState:
     """
-    Class containing data about the 
+    Class containing data about the game board and the two AIs that are playing playing
     """
-    #initializing some variables
+    
     def __init__(self, p1, p2):
         """
+        Initializes variables for GameState class objects
+
         :param p1: AI player 1, the AI that is being actively trained
         :param p2: AI player 2, the opponent of the AI that is being actively trained
         :type p1: AI class object
         :type p2: AI class object
         """
+
         self.board = numpy.zeros((3, 3))  #3x3 board with just zeroes
         self.p1 = p1
         self.p2 = p2
         self.gameEnd = False    # check if game is over
-        # self.boardHash = None
-        # self.whoseTurn = TURN      # init p1 plays first
         self.features = [0 for i in range(3)]      # init to a list of three zeroes; tracks the boards current features
         self.V_train = 0    # init to 0; will be calculated before use
 
 
-    # switching player turns after a position is filled
     def updateState(self, position):
+        """
+        Modifies the board to claim a space for a player and switches which AI's turn it is
+
+        :param position: Position that a player has just taken on the board
+        :type position: numpy array
+        """
+
         global TURN
         self.board[position] = TURN
         if TURN == 1:
             TURN = -1 
         else:
             TURN = 1
-        self.calculateFeaturesValues()
+        self.p1.calculateFeaturesValues(self.board)
         self.calculateV_train(self.board.copy(), TURN)
         self.p1.updateWeights(self.features, self.V_train)
 
 
-    # determines the value of the board features
-    def calculateFeaturesValues(self):
-        self.features = [0 for i in range(3)]
-        self.features[2] = self.board[1,1] # features[2] tracks who, if anyone, has taken the center space
-        for i in range(3):
-            # features[0] is the total number of rows, columns, and diagonals that have 2 of Player 1's spaces and 1 open space
-            # features[1] is the total number of rows, columns, and diagonals that have 2 of Player 2's spaces and 1 open space
-            temp = [self.board[i,0], self.board[i,1], self.board[i,2]] # checks each column
-            if sum(temp) == 2: # if the sum is 2, then there has to be two 1s and a 0. No other combination could make this
-                self.features[0] += 1
-            if sum(temp) == -2: # if the sum is -2, then there has to be two -1s and a 0. No other combination could make this
-                self.features[1] += 1
-            temp = [self.board[0,i], self.board[1,i], self.board[2,i]] # checks each row
-            if sum(temp) == 2:
-                self.features[0] += 1
-            if sum(temp) == -2:
-                self.features[1] += 1
-        temp = [self.board[0,0], self.board[1,1], self.board[2,2]] # checks upper left diagonal
-        if sum(temp) == 2:
-            self.features[0] += 1
-        if sum(temp) == -2:
-            self.features[1] += 1
-        temp = [self.board[2,0], self.board[1,1], self.board[0,2]] # checks upper right diagonal
-        if sum(temp) == 2:
-            self.features[0] += 1
-        if sum(temp) == -2:
-            self.features[1] += 1
+    # def calculateFeaturesValues(self):
+    #     """
+    #     Calculates the values of each of the board features being tracked.
+    #     features[0] is the number of rows/columns/diagonals that contain two 1s and a 0
+    #     features[1] is the number of rows/columns/diagonals that contain two -1s and a 0
+    #     features[2] is the player who has claimed it, 1 for the AI being trained, -1 for the opposing AI
+    #     """
+
+    #     self.features = [0 for i in range(3)]
+    #     self.features[2] = self.board[1,1] # features[2] tracks who, if anyone, has taken the center space
+    #     for i in range(3):
+    #         temp = [self.board[i,0], self.board[i,1], self.board[i,2]] # checks each column
+    #         # if the sum is 2, then there has to be two 1s and a 0. No other combination could make this
+    #         if sum(temp) == 2: 
+    #             self.features[0] += 1
+    #         # if the sum is -2, then there has to be two -1s and a 0. No other combination could make this
+    #         if sum(temp) == -2: 
+    #             self.features[1] += 1
+    #         temp = [self.board[0,i], self.board[1,i], self.board[2,i]] # checks each row
+    #         if sum(temp) == 2:
+    #             self.features[0] += 1
+    #         if sum(temp) == -2:
+    #             self.features[1] += 1
+    #     temp = [self.board[0,0], self.board[1,1], self.board[2,2]] # checks upper left diagonal
+    #     if sum(temp) == 2:
+    #         self.features[0] += 1
+    #     if sum(temp) == -2:
+    #         self.features[1] += 1
+    #     temp = [self.board[2,0], self.board[1,1], self.board[0,2]] # checks upper right diagonal
+    #     if sum(temp) == 2:
+    #         self.features[0] += 1
+    #     if sum(temp) == -2:
+    #         self.features[1] += 1
 
 
-    # Calculate V_train recursively
     def calculateV_train(self, current_board, turn): 
+        """
+        Calculates the value of the V_train variable by recursively checking every possible way the game could play out
+        from the board's current state
+
+        :param current_board: the current state of the board
+        :param turn: which AI is currently making a move in the game. Global variable TURN can not be used due to recursion
+        :type current_board: numpy array
+        :type turn: int
+        """
+
         current_turn = turn
         positions = self.availableSpots()
         if current_turn == 1:
             action = self.p1.chooseAction(positions, current_board, current_turn)
         else:
             action = self.p2.chooseAction(positions, current_board, current_turn)
+
         # take action and upate board state
         current_board[action] = current_turn
+
         # check board status if it is end
         win = self.winnerPredict(current_board)
         if win is None:
-            # current_board is typecasted to a list and back to a numpy array in order to avoid altering the original board on accident
             self.calculateV_train(current_board.copy(), -current_turn)
         else:
             return win
 
 
-    # reset board
     def reset(self):
+        """
+        Prepares the state of the board for a new game
+        """
+
         self.board = numpy.zeros((3, 3))
         self.gameEnd = False
         self.features = [0 for i in range(3)]
         TURN = 1
 
 
-    #determining empty/not claimed positions on board
     def availableSpots(self):
+        """
+        Creates and returns a list of all empty spaces currently on the board
+        """
+
         openSpots = []
         for x in range(3):
             for y in range(3):
@@ -122,18 +151,13 @@ class GameState:
         return openSpots
 
 
-    #determining empty/not claimed positions on board
-    def availableSpotsPredict(self, current_board):
-        openSpots = []
-        for x in range(3):
-            for y in range(3):
-                if current_board[x, y] == 0:
-                    openSpots.append((x, y))  # need to be tuple
-        return openSpots
-
-
-    #determining winner
     def winner(self):
+        """
+        Checks if the game has been won by either AI and returns the winner (or 0 for a draw). 
+        Returns none if there is not yet a winner.
+        Also changes the gameEnd variable as needed
+        """
+
         # Checking if sum of rows = 3 (for p1 to win) or -3 (for p2 to win)
         for i in range(3):
             temp = [self.board[i,0], self.board[i,1], self.board[i,2]]
@@ -181,8 +205,15 @@ class GameState:
         return None
 
 
-    #determining winner
     def winnerPredict(self, current_board):
+        """
+        Functions the same as the winner function, but does not end the game when a winner is found.
+        This function is used as a helper to calculate V_train
+
+        :param current_board: board state to be looked at
+        :type current_board: numpy array
+        """
+        
         # Checking if sum of rows = 3 (for p1 to win) or -3 (for p2 to win)
         for i in range(3):
             temp = [current_board[i,0], current_board[i,1], current_board[i,2]]
@@ -225,8 +256,12 @@ class GameState:
         return None
 
 
-    # only when game ends
     def countEndGameStatus(self):
+        """
+        Tracks the wins, losses, ties, and total number of games between the two AIs during training.
+        This is used at the end to generate the graphs of the AI's performance
+        """
+
         result = self.winner()
         # assigning win points
         global WIN_COUNT, LOSS_COUNT, TIE_COUNT, TOTAL_GAMES
@@ -245,8 +280,14 @@ class GameState:
         totalTracker.append(TOTAL_GAMES)
 
 
-    # How a match will occur
     def play(self, rounds):
+        """
+        Simulates games of Tic-Tac-Toe between two opposing AIs
+
+        :param rounds: number of games of Tic-Tac-Toe to simulate
+        :type rounds: int
+        """
+
         for i in range(rounds):
             if i % 100 == 0:
                 print(f"Rounds simulated: {i}")
@@ -260,20 +301,27 @@ class GameState:
                 self.updateState(action)
 
                 win = self.winner()
-                if win is not None:
-                    # self.calculateFeaturesValues()
-                    # self.calculateV_train(self.board.copy(), TURN)
-                    # self.p1.updateWeights(self.features, self.V_train)
+                if win is not None: # If the game has ended
                     self.countEndGameStatus()
-                    # ended with p1 either win or draw
-                    # self.p1.reset()
-                    # self.p2.reset()
                     self.reset()
                     break
 
 
 class AI:
+    """
+    Class containing data about an AI to play Tic-Tac-Toe
+    """
+
     def __init__(self, name, learning_rate=0.1):
+        """
+        Initializes variables for an AI class object
+
+        :param name: identifier for the AI
+        :param learning_rate: rate at which the AI learns
+        :type name: str
+        :type learning_rate: float
+        """
+
         self.name = name
         self.learning_rate = learning_rate  # determine rate at which the AI learns
         self.weights = [1 for i in range(3)] # initialize to a list of 3 zeroes
@@ -281,6 +329,13 @@ class AI:
 
     # determines the value of the board features given a board
     def calculateFeaturesValues(self, current_board):
+        """
+        Calculates the values of each of the board features being tracked.
+        features[0] is the number of rows/columns/diagonals that contain two 1s and a 0
+        features[1] is the number of rows/columns/diagonals that contain two -1s and a 0
+        features[2] is the player who has claimed it, 1 for the AI being trained, -1 for the opposing AI
+        """
+
         features = [0 for i in range(3)]
         features[2] = current_board[1,1] # features[2] tracks who, if anyone, has taken the center space
         for i in range(3):
@@ -367,7 +422,6 @@ if __name__ == "__main__":
         print("That is not a number. Try again.\n")
         training = input("How many matches do you want the AI to self-train: ")
 
-
     print("training...")
     st.play(int(training))
     print("TRAINING COMPLETE")
@@ -386,6 +440,7 @@ if __name__ == "__main__":
         "based on the newly generaed data?" + 
         "\nWARNING: This will overwrite those files if they already exist in the working directory." +
         "\nEnter 1 for yes or 0 for no.")
+
     if generate_graphs == 1:
         plt.plot(totalTracker, winRate)
         plt.title('Win Tracker')
