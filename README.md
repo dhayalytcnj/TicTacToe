@@ -4,7 +4,7 @@ TicTacToe learning program for MachineLearning
 
 When you open our file you can see a couple different documents. 
 
-In our board features game you can see our initial conditions set for the tic tac toe program and how we went about in creating it.
+In our board features file you can see our initial conditions set for the tic tac toe program and how we went about in creating it. The main program being built around these conditions and having it run by these rules.
 
 In our Graph pdf you can see all of our graph outcomes for the different games played by our program and see how the outcome was overall. Seeing a line graph of seeing the win vs lose ratio plays out over time.
 
