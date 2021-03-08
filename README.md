@@ -2,10 +2,10 @@
 TicTacToe learning program for MachineLearning
 
 CONTENTS:
-README.md     - The readme for the project
-main.py       - The source code of the project
-project1_D1   - Deliverable 1
-project1_D4   - Deliverable 4
+* README.md     - The readme for the project
+* main.py       - The source code of the project
+* project1_D1   - Deliverable 1
+* project1_D4   - Deliverable 4
 
 
 
