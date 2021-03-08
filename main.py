@@ -1,13 +1,12 @@
-
 '''
 Yash Dhayal, Michael Giordano, Corbin Grosso, & Yuriy Deyneka
 CSC 426-01
-
 Project 1: Self-Learning Tic Tac Toe
 '''
 
 import numpy
 import matplotlib.pyplot as plt #not on cluster, used to get graphs
+import random
 
 #global variables for win, loss, and tie counts, as well as total nnumber of games played
 WIN_COUNT = 0
@@ -21,6 +20,7 @@ loseRate = []
 tieRate = []
 totalTracker = []
 
+TURN = 1
 class GameState:
     """
     Class containing data about the 
@@ -38,25 +38,27 @@ class GameState:
         self.p2 = p2
         self.gameEnd = False    # check if game is over
         # self.boardHash = None
-        self.whoseTurn = 1      # init p1 plays first
+        # self.whoseTurn = TURN      # init p1 plays first
         self.features = [0 for i in range(3)]      # init to a list of three zeroes; tracks the boards current features
         self.V_train = 0    # init to 0; will be calculated before use
 
 
     # switching player turns after a position is filled
     def updateState(self, position):
-        self.board[position] = self.whoseTurn
-        if self.whoseTurn == 1:
-            self.whoseTurn = -1 
+        global TURN
+        self.board[position] = TURN
+        if TURN == 1:
+            TURN = -1 
         else:
-            self.whoseTurn = 1
+            TURN = 1
         self.calculateFeaturesValues()
-        self.calculateV_train(self.board.copy(), self.whoseTurn)
+        self.calculateV_train(self.board.copy(), TURN)
         self.p1.updateWeights(self.features, self.V_train)
 
 
     # determines the value of the board features
     def calculateFeaturesValues(self):
+        self.features = [0 for i in range(3)]
         self.features[2] = self.board[1,1] # features[2] tracks who, if anyone, has taken the center space
         for i in range(3):
             # features[0] is the total number of rows, columns, and diagonals that have 2 of Player 1's spaces and 1 open space
@@ -84,7 +86,8 @@ class GameState:
 
 
     # Calculate V_train recursively
-    def calculateV_train(self, current_board, current_turn): 
+    def calculateV_train(self, current_board, turn): 
+        current_turn = turn
         positions = self.availableSpots()
         if current_turn == 1:
             action = self.p1.chooseAction(positions, current_board, current_turn)
@@ -106,7 +109,8 @@ class GameState:
         self.board = numpy.zeros((3, 3))
         self.boardHash = None
         self.gameEnd = False
-        self.whoseTurn = 1
+        self.features = [0 for i in range(3)]
+        TURN = 1
 
 
     #determining empty/not claimed positions on board
@@ -248,18 +252,19 @@ class GameState:
             # if i % 1000 == 0:
             print(f"Rounds simulated: {i}")
             while not self.gameEnd:
-                print(self.board)
-                print(self.p1.weights)
                 positions = self.availableSpots()
-                if self.whoseTurn == 1:
-                    action = self.p1.chooseAction(positions, self.board, self.whoseTurn)
+                if TURN == 1:
+                    action = self.p1.chooseAction(positions, self.board, TURN)
                 else:
-                    action = self.p2.chooseAction(positions, self.board, self.whoseTurn)
+                    action = self.p2.chooseAction(positions, self.board, TURN)
                 # take action and upate board state
                 self.updateState(action)
 
                 win = self.winner()
                 if win is not None:
+                    # self.calculateFeaturesValues()
+                    # self.calculateV_train(self.board.copy(), TURN)
+                    # self.p1.updateWeights(self.features, self.V_train)
                     self.countEndGameStatus()
                     # ended with p1 either win or draw
                     self.p1.reset()
@@ -272,25 +277,12 @@ class AI:
     def __init__(self, name, learning_rate=0.1):
         self.name = name
         self.learning_rate = learning_rate  # determine rate at which the AI learns
-        self.weights = [0.5, 0.5, 0.5] # initialize to a list of 3 zeroes
+        self.weights = [1 for i in range(3)] # initialize to a list of 3 zeroes
 
 
     # reset board
     def reset(self):
-        self.states = []
-
-
-    # append a hash state
-    def addState(self, state, current_board, current_turn):
-        self.states.append(state)
-        current_board[position] = current_turn
-        if current_turn == 1:
-            current_turn = -1 
-        else:
-            current_turn = 1
-        self.calculateFeaturesValues()
-        self.calculateV_train(self.board.copy(), current_turn)
-        self.p1.updateWeights(self.features, self.V_train)
+        self.weights = [1 for i in range(3)]
 
 
     # determines the value of the board features given a board
@@ -336,7 +328,9 @@ class AI:
         V_hat = self.calculateV_hat(features)
 
         for i in range(len(self.weights)):
+            print(f'{i}: w={self.weights[i]}, x={features[i]}, V_train={V_train}, V_hat={V_hat}')
             self.weights[i] = self.weights[i] + self.learning_rate * (V_train - V_hat) * features[i]
+        print()
 
 
     # determine AI action
@@ -348,6 +342,8 @@ class AI:
                     possible_moves.append((i,j))
         if len(possible_moves) == 1:
             return possible_moves[0]
+        elif len(possible_moves) == 9 and current_turn == -1:
+            return possible_moves[int(random.randint(0, 8))]
         else:
             best_move = None
             best_V_hat = 0
@@ -386,6 +382,7 @@ if __name__ == "__main__":
     print("Wins: ", WIN_COUNT)
     print("Losses: ", LOSS_COUNT)
     print ("Ties: ", TIE_COUNT)
+    print("W/L Ratio:", WIN_COUNT / LOSS_COUNT)
 
     #prints out the graphs of winRate, loseRate, and tieRate. Only works if (matplotlib.pyplot) is installed
     # plt.plot(totalTracker, winRate)
