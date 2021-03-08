@@ -107,7 +107,6 @@ class GameState:
     # reset board
     def reset(self):
         self.board = numpy.zeros((3, 3))
-        self.boardHash = None
         self.gameEnd = False
         self.features = [0 for i in range(3)]
         TURN = 1
@@ -267,8 +266,8 @@ class GameState:
                     # self.p1.updateWeights(self.features, self.V_train)
                     self.countEndGameStatus()
                     # ended with p1 either win or draw
-                    self.p1.reset()
-                    self.p2.reset()
+                    # self.p1.reset()
+                    # self.p2.reset()
                     self.reset()
                     break
 
@@ -281,8 +280,8 @@ class AI:
 
 
     # reset board
-    def reset(self):
-        self.weights = [1 for i in range(3)]
+    # def reset(self):
+    #     self.weights = [1 for i in range(3)]
 
 
     # determines the value of the board features given a board
@@ -328,9 +327,7 @@ class AI:
         V_hat = self.calculateV_hat(features)
 
         for i in range(len(self.weights)):
-            print(f'{i}: w={self.weights[i]}, x={features[i]}, V_train={V_train}, V_hat={V_hat}')
             self.weights[i] = self.weights[i] + self.learning_rate * (V_train - V_hat) * features[i]
-        print()
 
 
     # determine AI action
@@ -382,7 +379,7 @@ if __name__ == "__main__":
     print("Wins: ", WIN_COUNT)
     print("Losses: ", LOSS_COUNT)
     print ("Ties: ", TIE_COUNT)
-    print("W/L Ratio:", WIN_COUNT / LOSS_COUNT)
+    print("W/L Ratio: ", WIN_COUNT/LOSS_COUNT)
 
     #prints out the graphs of winRate, loseRate, and tieRate. Only works if (matplotlib.pyplot) is installed
     # plt.plot(totalTracker, winRate)
