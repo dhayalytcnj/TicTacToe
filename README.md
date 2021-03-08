@@ -2,13 +2,23 @@
 TicTacToe learning program for MachineLearning
 
 CONTENTS:
-* README.md     - The readme for the project
-* main.py       - The source code of the project
-* project1_D1   - Deliverable 1
-* project1_D4   - Deliverable 4
+* README.md          - The readme for the project as a markdown file
+* main.py            - The source code of the project as a python file
+* project1_D1.pdf    - Deliverable 1 as a PDF
+* project1_D4.pdf    - Deliverable 4 as a PDF
 
 
-
+How to Run:
+- Open the terminal
+- Navigate to the location where the CJ_YD_Prj1.tar.gz file was downloaded
+    Ex. if downloaded to Downloads, enter "cd Downloads"
+- To extract the CJ_YD_Prj1.tar.gz file, type "tar -zxvf CJ_YD_Prj1.tar.gz". 
+- Type "cd Project1" to get into the extracted folder named Project1 containing the python code
+    NOTE: To run the following scripts, make sure you have python3 installed. Enter "sudo apt-get install python3.6" to install it.
+- Type "python3 D?.py", in which you replace '?' with the number corresponding to the deliverable you wish to run, and hit enter
+- You will be then prompted to enter a tape of your choosing 
+- Type in an input and then press enter. Example inputs for each deliverable are given below
+- The program will print either "accept" or "reject" based on the machine and input.
 
 In our board features file you can see our initial conditions set for the tic tac toe program and how we went about in creating it. The main program being built around these conditions and having it run by these rules.
 
