@@ -5,7 +5,7 @@ Project 1: Self-Learning Tic Tac Toe
 '''
 
 import numpy
-import matplotlib.pyplot as plt #not on cluster, used to get graphs
+import matplotlib.pyplot as plt # used to get graphs
 import random
 
 #global variables for win, loss, and tie counts, as well as total nnumber of games played
@@ -248,8 +248,8 @@ class GameState:
     # How a match will occur
     def play(self, rounds):
         for i in range(rounds):
-            # if i % 1000 == 0:
-            print(f"Rounds simulated: {i}")
+            if i % 100 == 0:
+                print(f"Rounds simulated: {i}")
             while not self.gameEnd:
                 positions = self.availableSpots()
                 if TURN == 1:
@@ -277,11 +277,6 @@ class AI:
         self.name = name
         self.learning_rate = learning_rate  # determine rate at which the AI learns
         self.weights = [1 for i in range(3)] # initialize to a list of 3 zeroes
-
-
-    # reset board
-    # def reset(self):
-    #     self.weights = [1 for i in range(3)]
 
 
     # determines the value of the board features given a board
@@ -379,29 +374,42 @@ if __name__ == "__main__":
     print("Wins: ", WIN_COUNT)
     print("Losses: ", LOSS_COUNT)
     print ("Ties: ", TIE_COUNT)
-    print("W/L Ratio: ", WIN_COUNT/LOSS_COUNT)
 
     #prints out the graphs of winRate, loseRate, and tieRate. Only works if (matplotlib.pyplot) is installed
-    # plt.plot(totalTracker, winRate)
-    # plt.title('Win Tracker')
-    # plt.xlabel('Number of Games Played')
-    # plt.ylabel('Win Percentage')
-    # plt.ylim([-1, 101])
-    # plt.xlim([1, TOTAL_GAMES])
-    # plt.show()
+    generate_graphs = input("Would you like to generate new graphs (located in the project1_D3 files)" + 
+    "based on the newly generaed data?" + 
+    "\nWARNING: This will overwrite those files if they already exist in the working directory." +
+    "\nEnter 1 for yes or 0 for no.")
+    while not generate_graphs.isnumeric() or int(generate_graphs) not in [0, 1]:
+        print('That is not a valid response.')
+        generate_graphs = input("Would you like to generate new graphs (located in the project1_D3 files)" + 
+        "based on the newly generaed data?" + 
+        "\nWARNING: This will overwrite those files if they already exist in the working directory." +
+        "\nEnter 1 for yes or 0 for no.")
+    if generate_graphs == 1:
+        plt.plot(totalTracker, winRate)
+        plt.title('Win Tracker')
+        plt.xlabel('Number of Games Played')
+        plt.ylabel('Win Percentage')
+        plt.ylim([-1, 101])
+        plt.xlim([1, TOTAL_GAMES])
+        plt.savefig('project1_D3_win.pdf')
+        plt.clf()
 
-    # plt.plot(totalTracker, loseRate)
-    # plt.title('Lose Tracker')
-    # plt.xlabel('Number of Games Played')
-    # plt.ylabel('Lose Percentage')
-    # plt.ylim([-1, 101])
-    # plt.xlim([1, TOTAL_GAMES])
-    # plt.show()
+        plt.plot(totalTracker, loseRate)
+        plt.title('Lose Tracker')
+        plt.xlabel('Number of Games Played')
+        plt.ylabel('Lose Percentage')
+        plt.ylim([-1, 101])
+        plt.xlim([1, TOTAL_GAMES])
+        plt.savefig('project1_D3_lose.pdf')
+        plt.clf()
 
-    # plt.plot(totalTracker, tieRate)
-    # plt.title('Tie Tracker')
-    # plt.xlabel('Number of Games Played')
-    # plt.ylabel('Draw Percentage')
-    # plt.ylim([-1, 101])
-    # plt.xlim([1, TOTAL_GAMES])
-    # plt.show()
+        plt.plot(totalTracker, tieRate)
+        plt.title('Tie Tracker')
+        plt.xlabel('Number of Games Played')
+        plt.ylabel('Draw Percentage')
+        plt.ylim([-1, 101])
+        plt.xlim([1, TOTAL_GAMES])
+        plt.savefig('project1_D3_tie.pdf')
+        plt.clf()
